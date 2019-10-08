@@ -27,9 +27,9 @@ function renderMenuItems(countries) {
         a.value = country.id;
         a.innerHTML = country.countryname;
 
-        // Här skapar jag ett click event. Något som sker när du klickar på landet
+        // Här skapar jag ett click event. 
         a.addEventListener("click", function (event) {
-            var countryId = event.target.value; // Detta är landets ID, detta sätter vi på rad 16 här i koden
+            var countryId = event.target.value; // Detta är landets ID
 
             var citiesBasedOnCountry = cityList.filter(function (city) {
                 return city.countryid == countryId;
