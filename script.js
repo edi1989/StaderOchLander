@@ -1,190 +1,158 @@
-//Är localstorage med städer "null", om inte skapa localstorage, om "null", skapa inte localstorage.
-// 3/10******************************************************************************
+const countryList = [];
+const cityList = [];
+const citiesVisited = [];
 
-var ListVisitedCities = []; //Array för besökta länder
-var controllCity = JSON.parse(localStorage.getItem("cityId"));
-var listAllCities;
-
-
-// if (controllCity !== null) {
-//     for (i = 0; i < controllCity.length; i++) {
-//         ListVisitedCities.push(controllCity[i]);
-//     }
-// }
-
-
-//Hämta data i land.json
-fetch("land.json")
-    .then(function (response) {
-        return response.json();
-    })
+Fetcher("land.json")
     .then(function (countries) {
-        printCountries(countries);
+        countryList.push(...countries);
+        renderMenuItems(countries);
     });
 
+// Hämtar städer efter countryId
+Fetcher("stad.json")
+    .then(function (cities) {
+        cityList.push(...cities);
+    });
 
+// Skapa menyn
+function renderMenuItems(countries) {
+    // Hämtar ul elementet (menyn)
+    const menu = document.querySelector("#menu");
 
-function printCountries(countries) {
-    var menu = document.getElementById("menu");
+    countries.map(function (country) {
+        const li = document.createElement("li");
 
-    for (var i = 0; i < countries.length; i++) {
-        var listitem = document.createElement("li");
-        var menuButton = document.createElement("button");
+        // Skapar en knapp
+        const a = document.createElement("a");
+        a.value = country.id;
+        a.innerHTML = country.countryname;
 
-        menuButton.innerHTML = countries[i].countryname;
-        menuButton.value = countries[i].id;
-        menuButton.onclick = function (event) { printCities(event.target.value) }
+        // Här skapar jag ett click event. Något som sker när du klickar på landet
+        a.addEventListener("click", function (event) {
+            var countryId = event.target.value; // Detta är landets ID, detta sätter vi på rad 16 här i koden
 
-        listitem.appendChild(menuButton);
-        menu.appendChild(listitem);
-    }
-
-    //3/10 Skriv ut städer jag besökt (Knapp)******************************************************************************
-    var listitem = document.createElement("li");
-    var visitedCitiesButton = document.createElement("button");
-
-    visitedCitiesButton.innerHTML = ("Städer jag besökt")
-
-    menu.appendChild(visitedCitiesButton);
-
-    visitedCitiesButton.onclick = function (event) {
-        var visitedArray = localStorage.getItem("visitedCities");
-        var printArray = JSON.parse(visitedArray);
-
-        showVisitedCities(printArray);
-        sumPopulation();
-    }
-
-    var listitem = document.createElement("li");
-    var clearButton = document.createElement("button");
-    clearButton.innerHTML = ("Rensa localstorage");
-    menu.appendChild(clearButton);
-    clearButton.onclick = function () {
-        localStorage.clear();
-        location.reload();
-    }
-
-}
-
-//for loop för att skapa lista på städer jag besökt från min array i localstorage
-
-//}
-//Visa besökta städer
-function showVisitedCities(printArray) {
-    var showVisitedCities = document.getElementById("showVisitedCities");
-    showVisitedCities.innerHTML = "";
-    for (i = 0; i < printArray.length; i++) {
-        showVisitedCities.insertAdjacentHTML("beforeend", "<button>" + printArray[i] + "</button>");
-
-    }
-}
-//Hämta data i stad.json
-function printCities(countryId) {
-    fetch("stad.json")
-        .then(function (response) {
-            return response.json();
-        })
-        .then(function (cities) {
-            listAllCities = cities;
-            var citiesBasedOnCountry = cities.filter(function (city) {
+            var citiesBasedOnCountry = cityList.filter(function (city) {
                 return city.countryid == countryId;
             })
+            renderCities(citiesBasedOnCountry);
+        });
 
-            var citylist = document.getElementById("citylist");
-            citylist.innerHTML = "";
+        // Lägger till knappen i menuitem (li)
+        li.appendChild(a);
 
-            for (i = 0; i < citiesBasedOnCountry.length; i++) {
-                var listitem = document.createElement("li");
-                var listButton = document.createElement("button");
-                listButton.innerHTML = citiesBasedOnCountry[i].stadname;
-                listButton.value = citiesBasedOnCountry[i].population;
-                listButton.id = citiesBasedOnCountry[i].stadname;
+        // Lägger till menuItem (li) i menyn (3 st i detta fall);
+        menu.appendChild(li);
+    });
 
-                //Kolla om staden redan är besökt, om inte visa knapp, annars visa texten redan besökt (IF ska börja någonstans vid rad 45?)
+    const li = document.createElement("li");
+    // Skapar en knapp
+    const a = document.createElement("a");
+    a.innerHTML = "Städer jag besökt";
 
-                listButton.onclick = function (event) { displayCityInformation(event) } //Ska ingå i IF som ELSE
-                citylist.appendChild(listButton);
-            }
-        })
-}
+    a.addEventListener("click", function (event) {
+        const citiesPage = document.querySelector("#citiesPage");
+        const visitedPage = document.querySelector("#visitedPage");
+        citiesPage.style.display = "none";
+        visitedPage.style.display = "block";
 
-// Visa informationsvy om staden (KONTROLLERA VARFÖR INTE INFORMATIONSVYN)
+        const clearHistoryButton = document.querySelector("#clearHistory");
 
-function displayCityInformation(event) {
-
-    cityid = event.target.id;
-    let temp = localStorage.getItem("visitedCities");
-
-    if (temp !== null) {
-
-        printArray = JSON.parse(temp);
-        console.log(temp);
-        for (var i = 0; i < printArray.length; i++) {
-            if (cityid !== printArray[i]) {
-                ListVisitedCities.push(cityid)
-                console.log(cityid);
-
-            } else {
-                alert("Redan besökt!!")
-            }
-            ListVisitedCities.push(cityid);
+        const temp = localStorage.getItem("citiesVisited");
+        if (temp === null) {
+            clearHistoryButton.style.display = "none";
+            var population = document.getElementById('population');
+            population.textContent = "Inga besökta städer.";
+        } else {
+            clearHistoryButton.style.display = "block";
+            clearHistoryButton.addEventListener("click", function () {
+                localStorage.removeItem("citiesVisited");
+                var population = document.getElementById('population');
+                population.textContent = "Historiken rensad.";
+                event.target.style.display = "block";
+            });
+            sumPopulation();
         }
-        console.log(cityid);
-    }
-}
-var myJson = JSON.stringify(ListVisitedCities);
-localStorage.setItem("visitedCities", myJson);
+    });
 
+    li.appendChild(a);
 
-
-var div = document.createElement('div');
-
-var paragraph = document.createElement('p');
-paragraph.innerHTML = event.target.value;
-
-var cityButton = document.createElement('button');
-cityButton.innerHTML = "Besök";
-
-cityButton.onclick = function (event) {
-    div.appendChild(paragraph);
-    div.appendChild(cityButton);
-    event.target.appendChild(div);
-
-
-    // //Lägg till den besökta stadens cityid i localstorage
-    // ListVisitedCities.push(cityid)
-
-    // console.log("click   " + cityid);
-    // div.innerHTML = "Tack för ditt besök";
+    menu.appendChild(li);
 }
 
+function renderCities(citiesBasedOnCountry) {
+    const citylist = document.querySelector("#citylist");
+    citylist.innerHTML = "";
 
+    citiesBasedOnCountry.map(function (city) {
+        const li = document.createElement("li");
 
+        // Skapar en knapp
+        const button = document.createElement("button");
+        button.value = city.population;
+        button.innerHTML = city.stadname;
 
+        button.addEventListener("click", function (event) {
+            console.log(city);
+            const cityInformation = document.querySelector("#cityInformation");
+            cityInformation.innerHTML = "";
+            const population = document.createElement("div");
+
+            population.innerHTML = "Invånarantal: " + event.target.value;
+
+            const visitedButton = document.createElement("button");
+            visitedButton.value = event.target.value;
+            visitedButton.innerHTML = "Besök";
+
+            visitedButton.addEventListener("click", function () {
+                citiesVisited.push(city.id);
+                const temp = localStorage.getItem("citiesVisited");
+                let cityExist = false;
+
+                if (temp !== null) {
+                    printArray = temp.split(',');
+                    cityExist = printArray.find(x => !!(x === city.id.toString()));
+                }
+
+                if (!cityExist) {
+                    localStorage.setItem("citiesVisited", citiesVisited);
+                }
+            });
+
+            cityInformation.appendChild(population);
+            cityInformation.appendChild(visitedButton);
+        });
+
+        li.appendChild(button);
+        citylist.appendChild(li);
+
+        const citiesPage = document.querySelector("#citiesPage");
+        const visitedPage = document.querySelector("#visitedPage");
+        citiesPage.style.display = "block";
+        visitedPage.style.display = "none";
+    });
+}
 
 // sum the population based on visisted cities
 function sumPopulation() {
+    const temp = localStorage.getItem("citiesVisited");
 
-    let temp = localStorage.getItem("visitedCities"),
-        printArray = JSON.parse(temp),
-        sumPop = 0;
+    if (temp !== null) {
+        const printArray = temp.split(",");
+        let sumPop = 0;
 
-    Fetcher("stad.json")
-        .then(data => {
-            for (let i = 0; i < printArray.length; i++) {
-                for (let j = 0; j < data.length; j++) {
-                    if (data[j].stadname == printArray[i]) {
-                        sumPop += parseInt(data[j].population)
-                    } else {
-                        console.log("Inga matchningar");
-                    }
-
+        for (let i = 0; i < printArray.length; i++) {
+            for (let j = 0; j < cityList.length; j++) {
+                if (cityList[j].id.toString() == printArray[i]) {
+                    sumPop += parseInt(cityList[j].population)
+                } else {
+                    console.log("Inga matchningar");
                 }
-
             }
-            var population = document.getElementById('population');
-            population.textContent = sumPop + " st"
-        })
+
+        }
+        var population = document.getElementById('population');
+        population.textContent = sumPop + " st";
+    }
 }
 
 function Fetcher(url) {
